@@ -31,12 +31,12 @@ namespace ChainStoreWeb
         {
             spContext = SharePointContextProvider.Current.GetSharePointContext(Context);
 
-            using (var clientContext = spContext.CreateUserClientContextForSPHost())
-            {
-                clientContext.Load(clientContext.Web, web => web.Title);
-                clientContext.ExecuteQuery();
-                Response.Write(clientContext.Web.Title);
-            }
+            //using (var clientContext = spContext.CreateUserClientContextForSPHost())
+            //{
+            //    clientContext.Load(clientContext.Web, web => web.Title);
+            //    clientContext.ExecuteQuery();
+            //    Response.Write(clientContext.Web.Title);
+            //}
         }
 
         protected void btnShowOrders_Click(object sender, EventArgs e)

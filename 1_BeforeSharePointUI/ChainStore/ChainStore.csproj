@@ -43,9 +43,10 @@
     <UseVSHostingProcess>false</UseVSHostingProcess>
   </PropertyGroup>
   <ItemGroup>
-    <Content Include="AppIcon.png">
+    <EmbeddedResource Include="AppIcon.png">
       <OpcRelationship>manifest-icon</OpcRelationship>
-    </Content>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <AppManifestFile Include="AppManifest.xml">

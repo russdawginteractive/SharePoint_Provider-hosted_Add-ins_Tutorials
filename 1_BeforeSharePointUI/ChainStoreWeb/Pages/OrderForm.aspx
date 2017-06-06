@@ -8,7 +8,16 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head runat="server">
     <title>Order Form</title>
-
+   <%--  <script 
+        src="//ajax.aspnetcdn.com/ajax/4.0/1/MicrosoftAjax.js" 
+        type="text/javascript">
+    </script>--%>
+    <%--<script 
+        type="text/javascript" 
+        src="//ajax.aspnetcdn.com/ajax/jQuery/jquery-1.9.1.min.js">
+    </script>      --%>
+    <%--<script type="text/javascript" src="/Scripts/sp_controls.js"></script>--%>
+    <link type="text/css" rel="stylesheet" href="<%= spContext.SPHostUrl.ToString() + "_layouts/15/defaultcss.ashx" %>" />
 </head>
 <body style="margin:10px;">
    <!-- 
@@ -17,7 +26,7 @@
     -->
     <form id="frmOrder" runat="server" visible="true">
         <asp:Label ID="lblOrderPrompt" runat="server"
-         Text="Enter a supplier, product, and quantity; and then press <b>Place Order</b>."></asp:Label>
+         Text="Enter a supplier, product, and quantity; and then press <span class='ms-accentText'>Place Order</span>."></asp:Label>
         <asp:Literal ID="Literal11" runat="server" Text="<br /><br />"></asp:Literal>
 
         <asp:Label ID="lblSupplier" runat="server" Text="Supplier:"></asp:Label>

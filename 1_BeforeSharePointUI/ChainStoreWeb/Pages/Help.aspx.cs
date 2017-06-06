@@ -11,9 +11,10 @@ namespace ChainStoreWeb.Pages
 {
     public partial class Help : System.Web.UI.Page
     {
+        protected SharePointContext spContext;
         protected void Page_Load(object sender, EventArgs e)
         {
-
+            spContext = Session["SPContext"] as SharePointContext;
         }
     }
 }
