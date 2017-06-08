@@ -68,9 +68,15 @@
     <None Include="AddEmployeeToCorpDB\SharePointProjectItem.spdata">
       <SharePointProjectItemId>{5fa70519-4715-45cc-827b-490581b59e8f}</SharePointProjectItemId>
     </None>
+    <None Include="PlaceOrder\SharePointProjectItem.spdata">
+      <SharePointProjectItemId>{63ec9520-2c8b-47e9-aaa5-f6ab3d9efbf7}</SharePointProjectItemId>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Content Include="AddEmployeeToCorpDB\Elements.xml">
+      <OpcRelationship>feature-elementmanifest</OpcRelationship>
+    </Content>
+    <Content Include="PlaceOrder\Elements.xml">
       <OpcRelationship>feature-elementmanifest</OpcRelationship>
     </Content>
   </ItemGroup>
