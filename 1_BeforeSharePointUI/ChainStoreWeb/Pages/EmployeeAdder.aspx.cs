@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved. Licensed under the MIT license. See full license at the bottom of this file.
 
 using ChainStoreWeb.Utilities;
+using Microsoft.SharePoint.Client;
 using System;
 using System.Data;
 using System.Data.SqlClient;
@@ -10,10 +11,21 @@ namespace ChainStoreWeb.Pages
     public partial class EmployeeAdder : System.Web.UI.Page
     {
         private SharePointContext spContext;
+        private int listItemID;
 
         protected void Page_Load(object sender, EventArgs e)
         {
+            spContext = Session["SPContext"] as SharePointContext;
 
+            listItemID = GetListItemIDFromQueryParameter();
+            // Read from SharePoint 
+            string employeeName = GetLocalEmployeeName();
+            // Write to remote database 
+            AddLocalEmployeeToCorpDB(employeeName);
+            // Write to SharePoint 
+            SetLocalEmployeeSyncStatus();
+            // Go back to the Local Employees page
+            Response.Redirect(spContext.SPHostUrl.ToString() + "Lists/Local Employees/AllItems.aspx", true);
         }
 
         private void AddLocalEmployeeToCorpDB(string employeeName)
@@ -30,6 +42,40 @@ namespace ChainStoreWeb.Pages
                 name.Value = employeeName;
                 cmd.ExecuteNonQuery();
             }
+        }
+
+        private void SetLocalEmployeeSyncStatus()
+        {
+            using (var clientContext = spContext.CreateUserClientContextForSPHost())
+            {
+                List localEmployeesList = clientContext.Web.Lists.GetByTitle("Local Employees");
+                ListItem selectedLocalEmployee = localEmployeesList.GetItemById(listItemID);
+                selectedLocalEmployee["Added_x0020_to_x0020_Corporate_x"] = true;
+                selectedLocalEmployee.Update();
+                clientContext.ExecuteQuery();
+            }
+        }
+
+        private string GetLocalEmployeeName()
+        {
+            ListItem localEmployee;
+
+            using (var clientContext = spContext.CreateUserClientContextForSPHost())
+            {
+                List localEmployeesList = clientContext.Web.Lists.GetByTitle("Local Employees");
+                localEmployee = localEmployeesList.GetItemById(listItemID);
+                clientContext.Load(localEmployee);
+                clientContext.ExecuteQuery();
+            }
+
+            return localEmployee["Title"].ToString();
+        }
+
+        private int GetListItemIDFromQueryParameter()
+        {
+            int result;
+            Int32.TryParse(Request.QueryString["SPListItemId"], out result);
+            return result;
         }
     }
 }

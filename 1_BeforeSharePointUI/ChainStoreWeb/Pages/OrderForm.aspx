@@ -25,6 +25,7 @@
         This order is then added to the SQL Azure database.
     -->
     <form id="frmOrder" runat="server" visible="true">
+        <asp:Label ID="lblResult" runat="server" Visible="true"></asp:Label>
         <asp:Label ID="lblOrderPrompt" runat="server"
          Text="Enter a supplier, product, and quantity; and then press <span class='ms-accentText'>Place Order</span>."></asp:Label>
         <asp:Literal ID="Literal11" runat="server" Text="<br /><br />"></asp:Literal>

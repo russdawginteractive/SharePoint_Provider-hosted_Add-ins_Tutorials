@@ -4,6 +4,9 @@ using System;
 using System.Data.SqlClient;
 using System.Data;
 using ChainStoreWeb.Utilities;
+using Microsoft.SharePoint.Client;
+using System.Linq;
+using System.Collections.Generic;
 
 namespace ChainStoreWeb.Pages
 {
@@ -37,8 +40,100 @@ namespace ChainStoreWeb.Pages
                     return;
                 }
             }
-
+            CreateExpectedShipment(txtBoxSupplier.Text, txtBoxItemName.Text, quantity);
             CreateOrder(txtBoxSupplier.Text, txtBoxItemName.Text, quantity);
+        }
+
+        private void CreateExpectedShipment(string supplier, string product, UInt16 quantity)
+        {
+            using (var clientContext = spContext.CreateUserClientContextForSPHost())
+            {
+                // Original code.
+                //List expectedShipmentsList = clientContext.Web.Lists.GetByTitle("Expected Shipments");
+                //ListItemCreationInformation itemCreateInfo = new ListItemCreationInformation();
+                //ListItem newItem = expectedShipmentsList.AddItem(itemCreateInfo);
+
+                //newItem["Title"] = product;
+                //newItem["Supplier"] = supplier;
+                //newItem["Quantity"] = quantity;
+                //newItem.Update();
+                //clientContext.ExecuteQuery();
+                // Code for checking for existence of List with inefficient multiple calls to clientContext.LoadQuery
+                //var query = clientContext.Web.Lists.Where(x => x.Title == "Expected Shipments");
+                ////query = from list in clientContext.Web.Lists
+                ////            where list.Title == "Expected Shipments"
+                ////            select list;
+                //IEnumerable<List> matchingLists = clientContext.LoadQuery(query);
+                //clientContext.ExecuteQuery();
+                //if (matchingLists.Count() != 0)
+                //{
+                //    List expectedShipmentsList = matchingLists.Single();
+                //    ListItemCreationInformation itemCreateInfo = new ListItemCreationInformation();
+                //    ListItem newItem = expectedShipmentsList.AddItem(itemCreateInfo);
+
+                //    newItem["Title"] = product;
+                //    newItem["Supplier"] = supplier;
+                //    newItem["Quantity"] = quantity;
+                //    newItem.Update();
+                //}
+                //clientContext.ExecuteQuery();
+
+                // NOTE: Write code for checking for List via ConditionalScope.
+                // https://msdn.microsoft.com/en-us/library/office/ee535891(v=office.14).aspx
+                // What I found is that the code below does not work, it generates an Exception.
+                // The Exception is:
+                //      Incorrect usage of conditional scope.Some actions, such as setting a property or invoking a method, are not allowed inside a conditional scope.
+                // The primary issue is that the ConditionalScope needs to be used ONLY for load operations.
+                // For code like what is illustrated below, we need to use ExceptionScope. See Below...
+                /* START OF EXCEPTION CODE
+                List expectedShipmentsList = clientContext.Web.Lists.GetByTitle("Expected Shipments");
+                
+                ConditionalScope scope = new ConditionalScope(clientContext,
+                    () => expectedShipmentsList.ServerObjectIsNull.Value != true);
+                using (scope.StartScope())
+                {
+                    ListItemCreationInformation itemCreateInfo = new ListItemCreationInformation();
+                    ListItem newItem = expectedShipmentsList.AddItem(itemCreateInfo);
+                    newItem["Title"] = product;
+                    newItem["Supplier"] = supplier;
+                    newItem["Quantity"] = quantity;
+                    newItem.Update();
+                }
+                
+                clientContext.ExecuteQuery();
+                lblResult.Text = scope.TestResult.Value.ToString();
+                END OF EXCEPTION CODE */
+
+                // NOTE: Begin ExceptionScope handling code to allow for setting of properties and invoking methods
+                // http://ranaictiu-technicalblog.blogspot.com/2010/08/sharepoint-2010-exception-handling.html
+                // https://msdn.microsoft.com/en-us/library/office/ee534976(v=office.14).aspx
+
+                ExceptionHandlingScope scope = new ExceptionHandlingScope(clientContext);
+
+                using (scope.StartScope())
+                {
+                    using (scope.StartTry())
+                    {
+                        List expectedShipmentsList = clientContext.Web.Lists.GetByTitle("Expected Shipments");
+                        ListItemCreationInformation itemCreateInfo = new ListItemCreationInformation();
+                        ListItem newItem = expectedShipmentsList.AddItem(itemCreateInfo);
+
+                        newItem["Title"] = product;
+                        newItem["Supplier"] = supplier;
+                        newItem["Quantity"] = quantity;
+                        newItem.Update();
+                    }
+                    using (scope.StartCatch())
+                    {
+                        lblResult.Text = scope.ErrorMessage;
+                    }
+                    using (scope.StartFinally())
+                    {
+                        lblResult.Text = "Expected Shipments Updated Properly. Product Ordered!";
+                    }
+                }
+                clientContext.ExecuteQuery();
+            }
         }
         private void CreateOrder(String supplierName, String productName, UInt16 quantityOrdered)
         {
