@@ -201,6 +201,7 @@
     </Compile>
     <Compile Include="SharePointContext.cs" />
     <Compile Include="TokenHelper.cs" />
+    <Compile Include="Utilities\SharePointComponentDeployer.cs" />
     <Compile Include="Utilities\SQLAzureUtilities.cs" />
   </ItemGroup>
   <ItemGroup />

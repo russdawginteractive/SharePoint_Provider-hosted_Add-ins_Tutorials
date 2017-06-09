@@ -8,7 +8,7 @@
 >
   <Properties>
     <Title>Chain Store</Title>
-    <StartPage>~remoteAppUrl/Pages/CorporateDataViewer.aspx?{StandardTokens}</StartPage>
+    <StartPage>~remoteAppUrl/Pages/CorporateDataViewer.aspx?{StandardTokens}&amp;SPAddInVersion=1.0.0.0</StartPage>
     <InstalledEventEndpoint>~remoteAppUrl/Services/AppEventReceiver.svc</InstalledEventEndpoint>
     <UninstallingEventEndpoint>~remoteAppUrl/Services/AppEventReceiver.svc</UninstallingEventEndpoint>
   </Properties>
@@ -17,6 +17,6 @@
     <RemoteWebApplication ClientId="*" />
   </AppPrincipal>
   <AppPermissionRequests>
-    <AppPermissionRequest Scope="http://sharepoint/content/sitecollection/web" Right="Write" />
+    <AppPermissionRequest Scope="http://sharepoint/content/sitecollection/web" Right="Manage" />
   </AppPermissionRequests>
 </App>

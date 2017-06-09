@@ -2,14 +2,42 @@
 
 using System;
 using System.Data;
+using System.Web;
+using System.Linq;
+using System.Collections.Generic;
+using Microsoft.SharePoint.Client;
 using System.Data.SqlClient;
+
 
 namespace ChainStoreWeb.Utilities
 {
     public static class SharePointComponentDeployer
     {
+        internal static SharePointContext sPContext;
+        internal static Version localVersion;
 
+        internal static Version RemoteTenantVersion
+        {
+            get
+            {
+                return GetTenantVersion();
+            }
+            set
+            {
+                SetTenantVersion(value);
+            }
+        }
 
+        public static bool IsDeployed
+        {
+            get
+            {
+                if (RemoteTenantVersion < localVersion)
+                    return false;
+                else
+                    return true;
+            }
+        }
         private static Version GetTenantVersion()
         {
             using (SqlConnection conn = SQLAzureUtilities.GetActiveSqlConnection())
@@ -48,6 +76,53 @@ namespace ChainStoreWeb.Utilities
                 version.Value = newVersion.ToString();
                 cmd.ExecuteNonQuery();
             }//dispose conn and cmd
+        }
+
+        private static void CreateLocalEmployeesList()
+        {
+            using (var clientContext = sPContext.CreateUserClientContextForSPHost())
+            {
+                //Code for checking for existence of List with inefficient multiple calls to clientContext.LoadQuery
+                var query = clientContext.Web.Lists.Where(x => x.Title == "Expected Shipments");
+              
+                IEnumerable<List> matchingLists = clientContext.LoadQuery(query);
+                clientContext.ExecuteQuery();
+                if (matchingLists.Count() != 0)
+                {
+                    // Create the list 
+                    ListCreationInformation listInfo = new ListCreationInformation();
+                    listInfo.Title = "Local Employees";
+                    listInfo.TemplateType = (int)ListTemplateType.GenericList;
+                    listInfo.Url = "Lists/Local Employees";
+
+                    List localEmployeesList = clientContext.Web.Lists.Add(listInfo);
+ 
+
+                    // Rename the Title field on the list 
+                    Field field = localEmployeesList.Fields.GetByInternalNameOrTitle("Title");
+                    field.Title = "Name";
+  
+                    field.Update();
+
+                    // Add "Added to Corporate DB" field to the list 
+                    localEmployeesList.Fields.AddFieldAsXml("<Field DisplayName='Added to Corporate DB'"
+                        + " Type='Boolean'" 
+                        + " ShowInEditForm='FALSE'"
+                        + " ShowInNewForm='FALSE'>"
+                        + "<Default>FALSE</Default></Field>",
+                        true, AddFieldOptions.DefaultValue);
+
+                    clientContext.ExecuteQuery();
+                }
+            }
+          
+        }
+
+        internal static void DeployChainStoreComponentsToHostWeb(HttpRequest request)
+        {
+            // Deployment code goes here.
+            CreateLocalEmployeesList();
+            RemoteTenantVersion = localVersion;
         }
     }
 }

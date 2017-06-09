@@ -30,6 +30,13 @@ namespace ChainStoreWeb
         protected void Page_Load(object sender, EventArgs e)
         {
             spContext = SharePointContextProvider.Current.GetSharePointContext(Context);
+            SharePointComponentDeployer.sPContext = spContext;
+            SharePointComponentDeployer.localVersion = new Version(Request.QueryString["SPAddInVersion"]);
+
+            if (!SharePointComponentDeployer.IsDeployed)
+            {
+                SharePointComponentDeployer.DeployChainStoreComponentsToHostWeb(Request);
+            }
 
             //using (var clientContext = spContext.CreateUserClientContextForSPHost())
             //{
