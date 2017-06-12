@@ -2,7 +2,7 @@
 <Elements xmlns="http://schemas.microsoft.com/sharepoint/">
   <CustomAction Id="dc747915-c02a-4b66-a1c7-ead30fca94c6.AddEmployeeToCorpDB"
                 RegistrationType="List"
-                RegistrationId="{$ListId:Lists/Local Employees;}"
+                RegistrationId="100"
                 Location="CommandUI.Ribbon"
                 Sequence="10001"
                 Title="Invoke &apos;AddEmployeeToCorpDB&apos; action">
