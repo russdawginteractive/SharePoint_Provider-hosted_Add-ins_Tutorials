@@ -7,7 +7,7 @@ using System.Linq;
 using System.Collections.Generic;
 using Microsoft.SharePoint.Client;
 using System.Data.SqlClient;
-
+using System.Web.Configuration;
 
 namespace ChainStoreWeb.Utilities
 {
@@ -83,11 +83,11 @@ namespace ChainStoreWeb.Utilities
             using (var clientContext = sPContext.CreateUserClientContextForSPHost())
             {
                 //Code for checking for existence of List with inefficient multiple calls to clientContext.LoadQuery
-                var query = clientContext.Web.Lists.Where(x => x.Title == "Expected Shipments");
+                var query = clientContext.Web.Lists.Where(x => x.Title == "Local Employees");
               
                 IEnumerable<List> matchingLists = clientContext.LoadQuery(query);
                 clientContext.ExecuteQuery();
-                if (matchingLists.Count() != 0)
+                if (matchingLists.Count() == 0)
                 {
                     // Create the list 
                     ListCreationInformation listInfo = new ListCreationInformation();
@@ -118,6 +118,55 @@ namespace ChainStoreWeb.Utilities
           
         }
 
+        private static void CreateExpectedShipmentsList()
+        {
+            using (var clientContext = sPContext.CreateUserClientContextForSPHost())
+            {
+                //Code for checking for existence of List with inefficient multiple calls to clientContext.LoadQuery
+                var query = clientContext.Web.Lists.Where(x => x.Title == "Expected Shipments");
+
+                IEnumerable<List> matchingLists = clientContext.LoadQuery(query);
+                clientContext.ExecuteQuery();
+                if (matchingLists.Count() == 0)
+                {
+                    ListCreationInformation listInfo = new ListCreationInformation();
+                    listInfo.Title = "Expected Shipments";
+                    listInfo.TemplateType = (int)ListTemplateType.GenericList;
+                    listInfo.Url = "Lists/ExpectedShipments";
+                    List expectedShipmentsList = clientContext.Web.Lists.Add(listInfo);
+
+                    Field field = expectedShipmentsList.Fields.GetByInternalNameOrTitle("Title");
+                    field.Title = "Product";
+                    field.Update();
+
+                    expectedShipmentsList.Fields.AddFieldAsXml("<Field DisplayName='Supplier'"
+                                                            + " Type='Text' />",
+                                                            true,
+                                                            AddFieldOptions.DefaultValue);
+                    expectedShipmentsList.Fields.AddFieldAsXml("<Field DisplayName='Quantity'"
+                                                                + " Type='Number'"
+                                                                + " Required='TRUE' >"
+                                                                + "<Default>1</Default></Field>",
+                                                                true,
+                                                                AddFieldOptions.DefaultValue);
+                    expectedShipmentsList.Fields.AddFieldAsXml("<Field DisplayName='Arrived'"
+                                                               + " Type='Boolean'"
+                                                               + " ShowInNewForm='FALSE'>"
+                                                               + "<Default>FALSE</Default></Field>",
+                                                                true,
+                                                                AddFieldOptions.DefaultValue);
+                    expectedShipmentsList.Fields.AddFieldAsXml("<Field DisplayName='Added to Inventory'"
+                                                                + " Type='Boolean'"
+                                                                + " ShowInNewForm='FALSE'>"
+                                                                + "<Default>FALSE</Default></Field>",
+                                                                true,
+                                                                AddFieldOptions.DefaultValue);
+
+                    clientContext.ExecuteQuery();
+
+                }
+            }
+        }
         private static void ChangeCustomActionRegistration()
         {
             using (var clientContext = sPContext.CreateUserClientContextForSPHost())
@@ -219,7 +268,37 @@ public static void RegisterJQueryLibrary(ClientContext context)
             // Deployment code goes here.
             CreateLocalEmployeesList();
             ChangeCustomActionRegistration();
+            CreateExpectedShipmentsList();
+            RegisterExpectedShipmentsEventHandler(request);
             RemoteTenantVersion = localVersion;
+        }
+
+        private static void RegisterExpectedShipmentsEventHandler(HttpRequest request)
+        {
+            using (var clientContext = sPContext.CreateUserClientContextForSPHost())
+            {
+                var query = clientContext.Web.Lists.Where(x => x.Title == "Expected Shipments");
+
+                IEnumerable<List> matchingLists = clientContext.LoadQuery(query);
+                clientContext.ExecuteQuery();
+
+                List expectedShipmentsList = matchingLists.Single();
+
+                // Add the event receiver to the list's collection of event receivers.
+                EventReceiverDefinitionCreationInformation receiver = new EventReceiverDefinitionCreationInformation();
+                receiver.ReceiverName = "ExpectedShipmentsItemUpdated";
+                receiver.EventType = EventReceiverType.ItemUpdated;
+
+                // Set the URL of the receiver.
+#if DEBUG
+                receiver.ReceiverUrl = WebConfigurationManager.AppSettings["RERdebuggingServiceBusUrl"].ToString();
+#else
+                receiver.ReceiverUrl = "https://" + request.Headers["Host"] + "/Services/RemoteEventReceiver1.svc";
+#endif
+                expectedShipmentsList.EventReceivers.Add(receiver);
+
+                clientContext.ExecuteQuery();
+            }
         }
     }
 }

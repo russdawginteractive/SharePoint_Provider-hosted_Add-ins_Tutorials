@@ -15,6 +15,8 @@ namespace ChainStoreWeb.Services
         /// <returns>Holds information returned from the app event.</returns>
         public SPRemoteEventResult ProcessEvent(SPRemoteEventProperties properties)
         {
+            // GIVES URL of Service Bus
+            // string debugEndpoint = System.ServiceModel.OperationContext.Current.Channel.LocalAddress.Uri.ToString();
             SPRemoteEventResult result = new SPRemoteEventResult();
             string tenantName = properties.AppEventProperties.HostWebFullUrl.ToString();
             if (!tenantName.EndsWith("/"))

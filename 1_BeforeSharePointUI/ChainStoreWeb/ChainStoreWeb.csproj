@@ -25,6 +25,7 @@
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
     <TargetOfficeVersion>16.1</TargetOfficeVersion>
+    <WcfConfigValidationEnabled>True</WcfConfigValidationEnabled>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -106,6 +107,7 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="System.IdentityModel" />
+    <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.ServiceModel" />
     <Reference Include="System.Web.DynamicData" />
     <Reference Include="System.Web.Entity" />
@@ -150,6 +152,7 @@
     <None Include="Scripts\_references.js" />
     <Content Include="Scripts\sp_controls.js" />
     <Content Include="Services\AppEventReceiver.svc" />
+    <Content Include="Services\RemoteEventReceiver1.svc" />
     <Content Include="Web.config" />
   </ItemGroup>
   <ItemGroup>
@@ -198,6 +201,9 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\AppEventReceiver.svc.cs">
       <DependentUpon>AppEventReceiver.svc</DependentUpon>
+    </Compile>
+    <Compile Include="Services\RemoteEventReceiver1.svc.cs">
+      <DependentUpon>RemoteEventReceiver1.svc</DependentUpon>
     </Compile>
     <Compile Include="SharePointContext.cs" />
     <Compile Include="TokenHelper.cs" />
