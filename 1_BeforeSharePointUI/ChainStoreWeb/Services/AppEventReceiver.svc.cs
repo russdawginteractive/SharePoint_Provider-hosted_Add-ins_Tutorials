@@ -3,6 +3,10 @@ using System.Data.SqlClient;
 using System.Data;
 using ChainStoreWeb.Utilities;
 using Microsoft.SharePoint.Client.EventReceivers;
+using Microsoft.SharePoint.Client;
+using System.ServiceModel.Channels;
+using System.ServiceModel;
+using System.Net;
 
 namespace ChainStoreWeb.Services
 {
@@ -16,7 +20,7 @@ namespace ChainStoreWeb.Services
         public SPRemoteEventResult ProcessEvent(SPRemoteEventProperties properties)
         {
             // GIVES URL of Service Bus
-            // string debugEndpoint = System.ServiceModel.OperationContext.Current.Channel.LocalAddress.Uri.ToString();
+            string debugEndpoint = System.ServiceModel.OperationContext.Current.Channel.LocalAddress.Uri.ToString();
             SPRemoteEventResult result = new SPRemoteEventResult();
             string tenantName = properties.AppEventProperties.HostWebFullUrl.ToString();
             if (!tenantName.EndsWith("/"))
@@ -63,6 +67,10 @@ namespace ChainStoreWeb.Services
                     }
                     break;
             }
+            // When a "before" event occurs (such as ItemAdding), call the event 
+            // receiver code.
+            //ListRemoteEventReceiver(properties);
+            //return new SPRemoteEventResult();
             return result;
         }
 
@@ -107,6 +115,91 @@ namespace ChainStoreWeb.Services
         {
             throw new NotImplementedException();
         }
+        public static void ListRemoteEventReceiver(SPRemoteEventProperties properties)
+        {
+            string logListTitle = "EventLog";
 
+            // Return if the event is from the EventLog list itself. Otherwise, it may go into
+            // an infinite loop.
+            if (string.Equals(properties.ItemEventProperties.ListTitle, logListTitle,
+                  StringComparison.OrdinalIgnoreCase))
+                return;
+
+            // Get the token from the request header.
+            HttpRequestMessageProperty requestProperty =
+                  (HttpRequestMessageProperty)OperationContext
+                   .Current.IncomingMessageProperties[HttpRequestMessageProperty.Name];
+            string contextTokenString = requestProperty.Headers["X-SP-ContextToken"];
+
+            // If there is a valid token, continue.
+            if (contextTokenString != null)
+            {
+                SharePointContextToken contextToken =
+                    TokenHelper.ReadAndValidateContextToken(contextTokenString,
+                         requestProperty.Headers[HttpRequestHeader.Host]);
+
+                Uri sharepointUrl = new Uri(properties.ItemEventProperties.WebUrl);
+                string accessToken = TokenHelper.GetAccessToken(contextToken,
+                                                      sharepointUrl.Authority).AccessToken;
+                bool exists = false;
+
+                // Retrieve the log list "EventLog" and add the name of the event that occurred
+                // to it with a date/time stamp.
+                using (ClientContext clientContext =
+                     TokenHelper.GetClientContextWithAccessToken(sharepointUrl.ToString(),
+                                                                                                         accessToken))
+                {
+                    clientContext.Load(clientContext.Web);
+                    clientContext.ExecuteQuery();
+                    List logList = clientContext.Web.Lists.GetByTitle(logListTitle);
+
+                    try
+                    {
+                        clientContext.Load(logList);
+                        clientContext.ExecuteQuery();
+                        exists = true;
+                    }
+
+                    catch (Microsoft.SharePoint.Client.ServerUnauthorizedAccessException)
+                    {
+                        // If the user doesn't have permissions to access the server that's 
+                        // running SharePoint, return.
+                        return;
+                    }
+
+                    catch (Microsoft.SharePoint.Client.ServerException)
+                    {
+                        // If an error occurs on the server that's running SharePoint, return.
+                        exists = false;
+                    }
+
+                    // Create a log list called "EventLog" if it doesn't already exist.
+                    if (!exists)
+                    {
+                        ListCreationInformation listInfo = new ListCreationInformation();
+                        listInfo.Title = logListTitle;
+                        // Create a generic custom list.
+                        listInfo.TemplateType = 100;
+                        clientContext.Web.Lists.Add(listInfo);
+                        clientContext.Web.Context.ExecuteQuery();
+                    }
+
+                    // Add the event entry to the EventLog list.
+                    string itemTitle = "Event: " + properties.EventType.ToString() +
+                          " occurred on: " +
+                          DateTime.Now.ToString(" yyyy/MM/dd/HH:mm:ss:fffffff");
+                    ListCollection lists = clientContext.Web.Lists;
+                    List selectedList = lists.GetByTitle(logListTitle);
+                    clientContext.Load<ListCollection>(lists);
+                    clientContext.Load<List>(selectedList);
+                    ListItemCreationInformation listItemCreationInfo =
+                          new ListItemCreationInformation();
+                    var listItem = selectedList.AddItem(listItemCreationInfo);
+                    listItem["Title"] = itemTitle;
+                    listItem.Update();
+                    clientContext.ExecuteQuery();
+                }
+            }
+        }
     }
 }
